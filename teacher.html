@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Road to Independence – Live-Lehreransicht</title>
+<script src="config.js"></script>
+<style>
+:root{--bg:#171a14;--panel:#252a20;--line:#59614e;--ink:#f3efdf;--muted:#b9b29d;--gold:#d4a34f;--green:#65a07b;--red:#b7655e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif}.wrap{max-width:1150px;margin:auto;padding:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:18px;margin-bottom:14px}
+input,button{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:#171a14;color:var(--ink)}button{cursor:pointer;background:var(--gold);color:#211a0d;font-weight:700}
+table{width:100%;border-collapse:collapse}th,td{border:1px solid var(--line);padding:8px;text-align:left}th{background:#343b2f}.muted{color:var(--muted);font-size:13px}
+.status{display:inline-flex;align-items:center;gap:6px}.dot{width:9px;height:9px;border-radius:50%;background:#777}.dot.live{background:var(--green)}.dot.err{background:var(--red)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.big{font-size:20px;font-weight:800}.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}@media(max-width:700px){.statgrid{grid-template-columns:1fr}}
+.stat{padding:12px;background:#1b1f18;border-radius:9px}.num{font-size:26px;font-weight:800}
+</style></head>
+<body><div class="wrap">
+<h1>Road to Independence – Live-Lehreransicht</h1>
+<div class="card">
+ <p>Diese Ansicht zeigt nur Schüler, deren Spiel <b>gerade geöffnet und verbunden</b> ist. Der Fortschritt wird ungefähr alle 15 Sekunden aktualisiert; es werden keine dauerhaften Spielstände gespeichert.</p>
+ <div class="controls">
+  <label>Sitzungscode: <input id="sessionCode" placeholder="z. B. 8b-1911"></label>
+  <button id="connectBtn">Live verbinden</button>
+ </div>
+ <p class="muted"><span class="status"><span id="dot" class="dot"></span><span id="statusText">Nicht verbunden</span></span></p>
+</div>
+<div class="statgrid">
+ <div class="card stat"><div class="muted">Online</div><div id="onlineCount" class="num">0</div></div>
+ <div class="card stat"><div class="muted">Ø Fortschritt</div><div id="avgProgress" class="num">0 %</div></div>
+ <div class="card stat"><div class="muted">bei Abschlussmission</div><div id="finalCount" class="num">0</div></div>
+</div>
+<div class="card">
+ <table>
+  <thead><tr><th>Name / Kürzel</th><th>Fortschritt</th><th>Stationen</th><th>aktueller Abschnitt</th><th>Spielzeit</th><th>Status</th></tr></thead>
+  <tbody id="rows"><tr><td colspan="6">Noch nicht verbunden.</td></tr></tbody>
+ </table>
+</div>
+<p class="muted">Wenn ein Schüler den Tab schließt oder die Verbindung verliert, verschwindet der Eintrag nach der Realtime-Abmeldung automatisch aus dieser Liste.</p>
+</div>
+<script type="module">
+const cfg=window.ROAD_CONFIG||{}, $=id=>document.getElementById(id);
+let sb=null,channel=null;
+const key=cfg.SUPABASE_PUBLISHABLE_KEY||cfg.SUPABASE_ANON_KEY||"";
+const fmt=s=>String(Math.floor((s||0)/60)).padStart(2,"0")+":"+String((s||0)%60).padStart(2,"0");
+const slug=v=>String(v||"").trim().toLowerCase().replace(/[^a-z0-9_-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);
+const esc=v=>String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+if(cfg.SUPABASE_URL&&key&&!cfg.SUPABASE_URL.includes("YOUR_")){
+ const mod=await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+ sb=mod.createClient(cfg.SUPABASE_URL,key,{
+   auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+   realtime:{
+    worker:true,
+    heartbeatIntervalMs:15000,
+    heartbeatCallback:(status)=>{
+     if((status==="timeout"||status==="disconnected")&&sb){
+      try{sb.realtime.connect()}catch(e){console.warn("Realtime reconnect:",e)}
+     }
+    }
+   }
+  });
+}else{
+ $("statusText").textContent="config.js ist noch nicht eingerichtet";
+ $("dot").classList.add("err");
+ $("connectBtn").disabled=true;
+}
+function render(){
+ if(!channel)return;
+ const raw=channel.presenceState();
+ const entries=[];
+ Object.values(raw).forEach(arr=>(arr||[]).forEach(p=>{
+  if(p&&p.student_name)entries.push(p);
+ }));
+ entries.sort((a,b)=>(b.progress_percent||0)-(a.progress_percent||0)||String(a.student_name).localeCompare(String(b.student_name),"de"));
+ $("onlineCount").textContent=entries.length;
+ const avg=entries.length?Math.round(entries.reduce((s,x)=>s+(Number(x.progress_percent)||0),0)/entries.length):0;
+ $("avgProgress").textContent=avg+" %";
+ $("finalCount").textContent=entries.filter(x=>(x.current_stage||0)>=10||x.current_task==="Abgeschlossen").length;
+ $("rows").innerHTML=entries.length?entries.map(r=>`<tr>
+  <td>${esc(r.student_name)}</td>
+  <td>${Number(r.progress_percent)||0}%</td>
+  <td>${Number(r.current_stage)||0}/10</td>
+  <td>${esc(r.current_task||"–")}</td>
+  <td>${fmt(Number(r.play_seconds)||0)}</td>
+  <td>online</td>
+ </tr>`).join(""):'<tr><td colspan="6">Aktuell ist niemand mit diesem Sitzungscode verbunden.</td></tr>';
+}
+async function connect(){
+ if(!sb)return;
+ const code=$("sessionCode").value.trim(),s=slug(code);
+ if(!s){$("statusText").textContent="Bitte Sitzungscode eingeben.";return}
+ if(channel){try{await sb.removeChannel(channel)}catch(e){}}
+ $("statusText").textContent="Verbinde …";$("dot").className="dot";
+ channel=sb.channel("rti-live-"+s,{config:{presence:{key:"teacher-"+Math.random().toString(36).slice(2)}}});
+ channel.on("presence",{event:"sync"},render)
+        .on("presence",{event:"join"},render)
+        .on("presence",{event:"leave"},render)
+        .subscribe(status=>{
+          if(status==="SUBSCRIBED"){
+            $("dot").className="dot live";$("statusText").textContent="Live verbunden: "+code;render();
+          }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){
+            $("dot").className="dot err";$("statusText").textContent="Verbindung fehlgeschlagen";
+          }
+        });
+}
+$("connectBtn").onclick=connect;
+$("sessionCode").addEventListener("keydown",e=>{if(e.key==="Enter")connect()});
+</script></body></html>

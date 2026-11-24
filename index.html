@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Road to Independence</title>
+<script src="config.js"></script>
+<style>
+:root{
+ --bg:#12150f;--panel:#24291f;--panel2:#30372a;--ink:#f4efdf;--muted:#bab39e;
+ --line:#59614e;--gold:#d4a34f;--green:#4f8061;--red:#9b4941;--blue:#557d95;
+ --grass:#788b5d;--grass2:#65764f;--road:#8b7e60;--water:#6f9caf;--paper:#f2e7c9;
+ --paperline:#8b7d5d;--dark:#181c15;--shadow:0 14px 34px rgba(0,0,0,.3)
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(circle at top,#2a3024,#11140e 72%);color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif}
+button,input{font:inherit} button{cursor:pointer}.hidden{display:none!important}
+.app{max-width:1320px;margin:auto;padding:14px}.card{background:rgba(35,40,30,.98);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.login{max-width:590px;margin:52px auto;padding:28px}.title{font-family:Georgia,"Times New Roman",serif;font-size:31px;font-weight:800;letter-spacing:.01em}
+.sub{font-size:13px;color:var(--muted)}label{display:block;font-weight:700;margin:12px 0 6px}
+input{width:100%;padding:12px;border-radius:8px;border:1px solid var(--line);background:#141711;color:var(--ink);font-size:16px}
+.btn{min-height:42px;border:1px solid var(--line);border-radius:9px;background:#343b2f;color:var(--ink);padding:9px 13px}
+.btn:hover{background:#424a3a}.btn.primary{background:var(--gold);border-color:var(--gold);color:#211a0d;font-weight:800}
+.btn.green{background:var(--green);border-color:var(--green);color:#fff}.btn.red{background:var(--red);border-color:var(--red);color:white}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:9px}.tools{display:flex;gap:7px;flex-wrap:wrap}
+.syncdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;margin-right:5px}.syncdot.online{background:#66a57d}.syncdot.busy{background:#d3a34d}
+.hud{display:grid;grid-template-columns:1.45fr .75fr .7fr .7fr;gap:8px;margin-bottom:9px}.hudbox{padding:10px 12px}
+@media(max-width:900px){.hud{grid-template-columns:1fr 1fr}.app{padding:9px}}@media(max-width:580px){.hud{grid-template-columns:1fr}}
+.progress{height:9px;border-radius:999px;background:#141711;overflow:hidden;margin-top:6px}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--gold),#e8c981);transition:.25s}
+.layout{display:grid;grid-template-columns:minmax(0,2.7fr) minmax(275px,.8fr);gap:10px}@media(max-width:950px){.layout{grid-template-columns:1fr}}
+.worldcard{padding:10px}.viewport{height:520px;position:relative;overflow:hidden;border-radius:11px;border:2px solid #0b0e09;background:#0c100b}
+@media(max-width:680px){.viewport{height:470px}}
+.world{position:absolute;width:1600px;height:900px;left:0;top:0;background:
+ radial-gradient(circle at 19% 24%,rgba(255,255,255,.06) 0 4%,transparent 4.5%),
+ linear-gradient(90deg,var(--grass) 0 76%,var(--water) 76% 100%);will-change:transform}
+.zone{position:absolute;border:2px dashed rgba(255,255,255,.15);border-radius:30px}.zoneLabel{position:absolute;color:rgba(255,255,255,.5);font-weight:900;letter-spacing:.12em;font-size:13px}
+.roadH,.roadV,.roadDiag{position:absolute;background:var(--road);box-shadow:inset 0 0 0 2px rgba(70,58,42,.2)}
+.roadH{height:82px}.roadV{width:82px}.roadDiag{width:88px;transform-origin:top center}
+.square{position:absolute;background:#b6a979;border:4px solid #71654a;border-radius:8px}
+.house{position:absolute;background:#714b35;border:4px solid #3c2f24;border-radius:5px}.house:before{content:"";position:absolute;left:-8px;right:-8px;top:-25px;height:28px;background:#49342a;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.tree{position:absolute;width:31px;height:31px;border-radius:50%;background:#45643d;border:4px solid #2b4929}
+.entity{position:absolute;z-index:8;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;user-select:none}
+.station{width:62px;height:62px;border-radius:50%;background:#783d35;border:3px solid #f2d49a;color:white;font-weight:900;font-size:23px;box-shadow:0 0 0 6px rgba(212,163,79,.16),0 5px 14px rgba(0,0,0,.35)}
+.station.done{background:var(--green)}.station.locked{filter:grayscale(1);opacity:.48}.station.final{background:#765826}
+.npc{width:36px;height:46px;border-radius:46% 46% 34% 34%;background:#d5b989;border:3px solid #332a20}.npc:before{content:"";position:absolute;width:25px;height:10px;top:-8px;border-radius:50%;background:#4c392c}.npc:after{content:"";position:absolute;width:15px;height:18px;bottom:-15px;background:#384f62;border-radius:2px}
+.item{width:34px;height:34px;border-radius:6px;background:#d8c99e;border:3px solid #5c513c;font-size:18px}.item.collected{display:none}
+.label{position:absolute;z-index:9;transform:translate(-50%,0);font-size:11px;font-weight:800;background:rgba(17,20,14,.84);padding:3px 6px;border-radius:5px;white-space:nowrap}
+.player{position:absolute;z-index:30;width:36px;height:36px;border-radius:50% 50% 42% 42%;background:#e7cea4;border:3px solid #2d271e;box-shadow:0 4px 9px rgba(0,0,0,.42)}
+.player:before{content:"";position:absolute;left:4px;top:-7px;width:22px;height:11px;background:#284d68;border:2px solid #182c3c;border-radius:50% 50% 15% 15%}.player:after{content:"";position:absolute;left:10px;top:27px;width:10px;height:16px;background:#8d342f;border-radius:2px}
+.soldier{position:absolute;z-index:6;width:27px;height:38px;background:#9c3f36;border:2px solid #3f2623;border-radius:4px}.soldier:before{content:"";position:absolute;left:1px;right:1px;top:-9px;height:9px;background:#202b38}
+.barricade{position:absolute;z-index:6;width:110px;height:20px;background:repeating-linear-gradient(45deg,#68452f 0 9px,#9a6a48 9px 18px);border:2px solid #422d20}
+.flag{position:absolute;z-index:5;width:55px;height:33px;background:repeating-linear-gradient(0deg,#a7443b 0 5px,#e9dfc3 5px 10px);border-left:3px solid #473a2c}
+.prompt{position:absolute;z-index:80;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(17,20,14,.96);border:1px solid var(--gold);border-radius:8px;padding:8px 12px;font-weight:800;text-align:center;max-width:82%}
+.minimap{position:absolute;right:10px;top:10px;z-index:70;width:170px;height:96px;background:#eadfbe;border:2px solid #655a43;border-radius:8px;overflow:hidden;color:#28251d}.minimap .fog{position:absolute;background:#44443d;opacity:.87;transition:.25s}.minimapDot{position:absolute;width:7px;height:7px;border-radius:50%;background:#8b4138}.minimapDot.done{background:#4f8061}.miniPlayer{position:absolute;width:8px;height:8px;border-radius:50%;background:#213f66;border:1px solid white;z-index:4}
+.side{display:flex;flex-direction:column;gap:8px}.sidebox{padding:12px}.list{list-style:none;padding:0;margin:7px 0 0}.list li{padding:5px 0;border-bottom:1px dashed #4b5345;font-size:13px}
+.quest{padding:7px 8px;border-radius:8px;background:#181c15;margin-top:6px;font-size:13px}.quest.done{border-left:4px solid var(--green)}
+.badge{display:inline-block;padding:5px 8px;border-radius:999px;background:#5c4925;border:1px solid #caa65d;margin:3px;font-size:12px}
+.mobile{display:grid;grid-template-columns:50px 50px 50px;gap:5px;justify-content:center;margin-top:8px}.mobile button{height:45px}
+.panel{margin-top:10px;padding:17px}.panelhead{display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap}
+.paper{background:var(--paper);color:#29251c;padding:16px;border-radius:10px;line-height:1.5}.paper table{width:100%;border-collapse:collapse;margin-top:9px}.paper th,.paper td{border:1px solid var(--paperline);padding:8px;text-align:left}.paper th{background:#ded1ae}
+.timerrow{display:flex;align-items:center;gap:10px;margin-top:11px}.timer{font-size:24px;font-weight:900;color:#f0c978;min-width:76px}.timerbar{height:10px;flex:1;background:#141711;border-radius:999px;overflow:hidden}.timerfill{height:100%;width:0;background:linear-gradient(90deg,#9d6b3c,#d8ac5e);transition:width 1s linear}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}@media(max-width:650px){.choices{grid-template-columns:1fr}}
+.choice{text-align:left;min-height:56px}.choice.good{background:#355b45;border-color:#7caf8c}.choice.bad{background:#713b36;border-color:#bd756d}
+.feedback{padding:10px;background:#171a14;border-radius:8px;margin-top:9px}.dialogOptions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.inventoryGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:9px}.invItem{border:1px solid var(--line);border-radius:8px;padding:10px;background:#181c15;color:var(--ink)}.invItem.selected{outline:2px solid var(--gold)}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px;margin-top:9px}.evidence{background:#ece0bd;color:#282319;padding:12px;border-radius:8px;border:1px solid #8c7d59;transform:rotate(-1deg)}.evidence:nth-child(even){transform:rotate(1deg)}
+.overlay{position:absolute;inset:5%;z-index:100;background:#eadfbe;color:#2a271e;border:3px solid #665a43;border-radius:12px;padding:16px;box-shadow:0 18px 46px rgba(0,0,0,.5);overflow:auto}.overlayMap{position:relative;height:480px;min-width:620px;background:linear-gradient(90deg,#c9bb91 0 76%,#91b8c7 76% 100%);border:1px solid #746950;border-radius:8px;overflow:hidden}.mapdot{position:absolute;width:16px;height:16px;border-radius:50%;background:#8a4138;border:3px solid #fff0c4}.mapdot.done{background:#4f8061}.maptext{position:absolute;font-size:12px;font-weight:800}.fogBig{position:absolute;background:#45453f;opacity:.86;transition:.3s;border-radius:12px}
+.finalOrder{margin-top:10px;padding:10px;background:#171a14;border-radius:8px}.footer{text-align:center;color:var(--muted);font-size:12px;margin:16px 0}
+</style>
+</head>
+<body>
+<div class="app">
+<section id="login" class="card login">
+ <div class="title">Road to Independence</div>
+ <p class="sub">Amerikanische Revolution · Lernadventure</p>
+ <p>Bewege deine Figur durch die Spielwelt. Pflichtstationen sind nummeriert; Personen und Fundstücke können zusätzlich erkundet werden. Nach jeder Pflichtstation folgt eine Sicherung. Die Heft-Checkpoints sind verbindlich.</p>
+ <form id="loginForm">
+  <label for="name">Anmeldename / Kürzel</label><input id="name" maxlength="24" required placeholder="z. B. Mia8b">
+  <label for="clazz">Sitzungscode</label><input id="clazz" maxlength="12" required placeholder="z. B. 8b-1911">
+  <div style="margin-top:14px"><button class="btn primary" type="submit">Spiel starten</button></div>
+ </form>
+ <p class="sub" style="margin-top:12px"><span id="syncDotLogin" class="syncdot"></span><span id="syncLoginText">Live-Verbindung wird geprüft …</span></p>
+</section>
+
+<section id="game" class="hidden">
+ <div class="top">
+  <div><div class="title">Road to Independence</div><div class="sub"><span id="who"></span> · <span id="syncState"><span class="syncdot" id="syncDot"></span>Live</span></div></div>
+  <div class="tools">
+   <button id="mapBtn" class="btn" type="button">🗺 Karte</button>
+   <button id="inventoryBtn" class="btn" type="button">🎒 Inventar</button>
+   <button id="boardBtn" class="btn" type="button">🧷 Beweiswand</button>
+   <button id="resetBtn" class="btn" type="button">↺ Sitzung neu starten</button>
+  </div>
+ </div>
+
+ <div class="hud">
+  <div class="card hudbox"><b>Auftrag:</b> <span id="missionText">Erkunde die erste Pflichtstation.</span></div>
+  <div class="card hudbox"><b>Fortschritt:</b> <span id="progressText">0%</span><div class="progress"><div id="progressBar" class="bar"></div></div></div>
+  <div class="card hudbox"><b>Beweise:</b> <span id="evidenceCount">0</span>/10</div>
+  <div class="card hudbox"><b>Spielzeit:</b> <span id="playTime">00:00</span></div>
+ </div>
+
+ <div class="layout">
+  <div class="card worldcard">
+   <div id="viewport" class="viewport" tabindex="0">
+    <div id="world" class="world">
+     <div class="zone" style="left:40px;top:40px;width:510px;height:350px"></div><div class="zoneLabel" style="left:65px;top:55px">BOSTON / HAFEN</div>
+     <div class="zone" style="left:560px;top:40px;width:530px;height:350px"></div><div class="zoneLabel" style="left:585px;top:55px">STADT / DRUCKEREI</div>
+     <div class="zone" style="left:80px;top:450px;width:570px;height:390px"></div><div class="zoneLabel" style="left:105px;top:465px">PHILADELPHIA / VERSAMMLUNG</div>
+     <div class="zone" style="left:690px;top:445px;width:470px;height:390px"></div><div class="zoneLabel" style="left:715px;top:460px">MILIZLAGER / KRIEG</div>
+     <div class="zone" style="left:1190px;top:80px;width:330px;height:690px"></div><div class="zoneLabel" style="left:1210px;top:95px">NEUER STAAT</div>
+
+     <div class="roadH" style="left:70px;top:200px;width:1000px"></div><div class="roadH" style="left:100px;top:620px;width:1020px"></div>
+     <div class="roadV" style="left:480px;top:80px;height:720px"></div><div class="roadV" style="left:990px;top:90px;height:710px"></div>
+     <div class="roadH" style="left:1030px;top:330px;width:460px"></div>
+     <div class="square" style="left:645px;top:135px;width:235px;height:210px"></div><div class="square" style="left:260px;top:535px;width:260px;height:220px"></div>
+     <div class="square" style="left:1250px;top:250px;width:210px;height:260px"></div>
+
+     <div class="house" style="left:115px;top:100px;width:90px;height:64px"></div><div class="house" style="left:320px;top:100px;width:95px;height:65px"></div>
+     <div class="house" style="left:645px;top:88px;width:95px;height:65px"></div><div class="house" style="left:830px;top:86px;width:100px;height:66px"></div>
+     <div class="house" style="left:150px;top:520px;width:95px;height:65px"></div><div class="house" style="left:520px;top:520px;width:95px;height:64px"></div>
+     <div class="house" style="left:720px;top:520px;width:94px;height:64px"></div><div class="house" style="left:1040px;top:520px;width:94px;height:64px"></div>
+     <div class="house" style="left:1240px;top:155px;width:90px;height:64px"></div><div class="house" style="left:1410px;top:155px;width:90px;height:64px"></div>
+
+     <div class="tree" style="left:70px;top:330px"></div><div class="tree" style="left:190px;top:350px"></div><div class="tree" style="left:600px;top:360px"></div>
+     <div class="tree" style="left:875px;top:375px"></div><div class="tree" style="left:90px;top:790px"></div><div class="tree" style="left:650px;top:800px"></div>
+     <div class="tree" style="left:1110px;top:780px"></div><div class="tree" style="left:1490px;top:700px"></div>
+
+     <div id="soldiersA" class="hidden"><div class="soldier" style="left:510px;top:170px"></div><div class="soldier" style="left:545px;top:170px"></div></div>
+     <div id="barricadeA" class="barricade hidden" style="left:880px;top:590px"></div>
+     <div id="flagA" class="flag hidden" style="left:1290px;top:285px"></div>
+
+     <!-- Stations -->
+     <div id="s1" class="entity station" data-entity="s1" style="left:150px;top:240px">1</div><div class="label" style="left:150px;top:275px">13 Kolonien</div>
+     <div id="s2" class="entity station locked" data-entity="s2" style="left:355px;top:240px">2</div><div class="label" style="left:355px;top:275px">Schulden & Steuern</div>
+     <div id="s3" class="entity station locked" data-entity="s3" style="left:650px;top:240px">3</div><div class="label" style="left:650px;top:275px">Boston Tea Party</div>
+     <div id="s4" class="entity station locked" data-entity="s4" style="left:870px;top:240px">4</div><div class="label" style="left:870px;top:275px">Strafgesetze</div>
+     <div id="s5" class="entity station locked" data-entity="s5" style="left:210px;top:660px">5</div><div class="label" style="left:210px;top:695px">Kontinentalkongress</div>
+     <div id="s6" class="entity station locked" data-entity="s6" style="left:465px;top:660px">6</div><div class="label" style="left:465px;top:695px">Lexington & Concord</div>
+     <div id="s7" class="entity station locked" data-entity="s7" style="left:760px;top:660px">7</div><div class="label" style="left:760px;top:695px">1776</div>
+     <div id="s8" class="entity station locked" data-entity="s8" style="left:1030px;top:660px">8</div><div class="label" style="left:1030px;top:695px">Krieg & Frieden</div>
+     <div id="s9" class="entity station locked" data-entity="s9" style="left:1290px;top:350px">9</div><div class="label" style="left:1290px;top:385px">Verfassung</div>
+     <div id="s10" class="entity station locked" data-entity="s10" style="left:1420px;top:470px">10</div><div class="label" style="left:1420px;top:505px">Demokratie-Check</div>
+     <div id="final" class="entity station final locked hidden" data-entity="final" style="left:1360px;top:650px">★</div><div id="finalLabel" class="label hidden" style="left:1360px;top:685px">Abschlussmission</div>
+
+     <!-- NPCs -->
+     <div class="entity npc" data-entity="npcMerchant" style="left:270px;top:315px"></div><div class="label" style="left:270px;top:345px">Händler</div>
+     <div class="entity npc" data-entity="npcPrinter" style="left:760px;top:320px"></div><div class="label" style="left:760px;top:350px">Drucker</div>
+     <div class="entity npc" data-entity="npcDelegate" style="left:390px;top:760px"></div><div class="label" style="left:390px;top:790px">Delegierter</div>
+     <div class="entity npc" data-entity="npcMilitia" style="left:900px;top:760px"></div><div class="label" style="left:900px;top:790px">Milizionär</div>
+     <div class="entity npc" data-entity="npcCitizen" style="left:1320px;top:560px"></div><div class="label" style="left:1320px;top:590px">Bürgerin</div>
+     <div class="entity npc" data-entity="npcJudge" style="left:1460px;top:590px"></div><div class="label" style="left:1460px;top:620px">Richter</div>
+
+     <!-- Items -->
+     <div id="itemTax" class="entity item" data-entity="itemTax" style="left:95px;top:285px">📄</div>
+     <div id="itemTea" class="entity item" data-entity="itemTea" style="left:745px;top:200px">📦</div>
+     <div id="itemPamphlet" class="entity item" data-entity="itemPamphlet" style="left:845px;top:355px">📰</div>
+     <div id="itemLetter" class="entity item" data-entity="itemLetter" style="left:520px;top:730px">✉️</div>
+     <div id="itemMap" class="entity item" data-entity="itemMap" style="left:1110px;top:700px">🗺</div>
+     <div id="itemDeclaration" class="entity item" data-entity="itemDeclaration" style="left:840px;top:560px">📜</div>
+
+     <div id="player" class="player" style="left:260px;top:430px"></div>
+    </div>
+
+    <div id="prompt" class="prompt hidden"></div>
+    <div id="miniMap" class="minimap">
+      <div id="miniFog1" class="fog" style="left:0;top:0;width:36%;height:55%"></div>
+      <div id="miniFog2" class="fog" style="left:32%;top:0;width:39%;height:55%"></div>
+      <div id="miniFog3" class="fog" style="left:0;top:48%;width:48%;height:52%"></div>
+      <div id="miniFog4" class="fog" style="left:45%;top:48%;width:29%;height:52%"></div>
+      <div id="miniFog5" class="fog" style="left:70%;top:0;width:30%;height:100%"></div>
+      <div class="minimapDot" data-mini="s1" style="left:9%;top:26%"></div><div class="minimapDot" data-mini="s2" style="left:21%;top:26%"></div>
+      <div class="minimapDot" data-mini="s3" style="left:40%;top:26%"></div><div class="minimapDot" data-mini="s4" style="left:54%;top:26%"></div>
+      <div class="minimapDot" data-mini="s5" style="left:13%;top:73%"></div><div class="minimapDot" data-mini="s6" style="left:29%;top:73%"></div>
+      <div class="minimapDot" data-mini="s7" style="left:47%;top:73%"></div><div class="minimapDot" data-mini="s8" style="left:64%;top:73%"></div>
+      <div class="minimapDot" data-mini="s9" style="left:81%;top:39%"></div><div class="minimapDot" data-mini="s10" style="left:89%;top:52%"></div>
+      <div id="miniPlayer" class="miniPlayer"></div>
+    </div>
+
+    <div id="mapOverlay" class="overlay hidden">
+     <div class="panelhead"><div><h3 style="margin:0">Übersichtskarte</h3><div class="sub" style="color:#6d634d">Erkundete Gebiete werden aufgedeckt.</div></div><button id="closeMap" class="btn" type="button">Schließen</button></div>
+     <div style="overflow:auto;margin-top:9px"><div class="overlayMap">
+      <div class="mapdot" data-map="s1" style="left:8%;top:24%"></div><div class="maptext" style="left:11%;top:23%">13 Kolonien</div>
+      <div class="mapdot" data-map="s2" style="left:21%;top:24%"></div><div class="maptext" style="left:24%;top:23%">Steuern</div>
+      <div class="mapdot" data-map="s3" style="left:40%;top:24%"></div><div class="maptext" style="left:43%;top:23%">Tea Party</div>
+      <div class="mapdot" data-map="s4" style="left:54%;top:24%"></div><div class="maptext" style="left:57%;top:23%">Strafgesetze</div>
+      <div class="mapdot" data-map="s5" style="left:12%;top:72%"></div><div class="maptext" style="left:15%;top:71%">Kongress</div>
+      <div class="mapdot" data-map="s6" style="left:29%;top:72%"></div><div class="maptext" style="left:32%;top:71%">Lexington</div>
+      <div class="mapdot" data-map="s7" style="left:47%;top:72%"></div><div class="maptext" style="left:50%;top:71%">1776</div>
+      <div class="mapdot" data-map="s8" style="left:64%;top:72%"></div><div class="maptext" style="left:67%;top:71%">1783</div>
+      <div class="mapdot" data-map="s9" style="left:81%;top:38%"></div><div class="maptext" style="left:84%;top:37%">Verfassung</div>
+      <div class="mapdot" data-map="s10" style="left:89%;top:52%"></div><div class="maptext" style="left:82%;top:55%">Demokratie</div>
+      <div id="mapFog1" class="fogBig" style="left:0;top:0;width:35%;height:52%"></div><div id="mapFog2" class="fogBig" style="left:32%;top:0;width:39%;height:52%"></div>
+      <div id="mapFog3" class="fogBig" style="left:0;top:46%;width:48%;height:54%"></div><div id="mapFog4" class="fogBig" style="left:45%;top:46%;width:30%;height:54%"></div>
+      <div id="mapFog5" class="fogBig" style="left:70%;top:0;width:30%;height:100%"></div>
+     </div></div>
+    </div>
+   </div>
+
+   <div class="mobile">
+    <span></span><button class="btn move" data-dir="up" type="button">↑</button><span></span>
+    <button class="btn move" data-dir="left" type="button">←</button><button id="interactBtn" class="btn primary" type="button">E</button><button class="btn move" data-dir="right" type="button">→</button>
+    <span></span><button class="btn move" data-dir="down" type="button">↓</button><span></span>
+   </div>
+  </div>
+
+  <aside class="side">
+   <div class="card sidebox"><b>Nebenmissionen</b><div id="quests"></div></div>
+   <div class="card sidebox"><b>Abzeichen</b><div id="badges" style="margin-top:6px"><span class="sub">Noch keine.</span></div></div>
+   <div class="card sidebox"><b>Pflichtfortschritt</b><ul id="stationList" class="list"></ul></div>
+  </aside>
+ </div>
+
+ <section id="interactionPanel" class="card panel hidden">
+  <div class="panelhead"><div><div class="sub" id="interactionKind"></div><h2 id="interactionTitle" style="margin:3px 0"></h2></div><button id="closeInteraction" class="btn" type="button">Zurück zur Welt</button></div>
+  <div id="interactionContent"></div>
+ </section>
+
+ <section id="inventoryPanel" class="card panel hidden">
+  <div class="panelhead"><div><div class="sub">🎒 Fundstücke</div><h2 style="margin:3px 0">Inventar</h2></div><button id="closeInventory" class="btn" type="button">Schließen</button></div>
+  <p class="sub">Zwei Gegenstände können ausgewählt und kombiniert werden. Manche Kombinationen erzeugen einen zusätzlichen Beweis.</p>
+  <div id="inventoryGrid" class="inventoryGrid"></div><div style="margin-top:9px"><button id="combineBtn" class="btn primary" type="button">Kombinieren</button></div>
+  <div id="combineFeedback" class="feedback hidden"></div>
+ </section>
+
+ <section id="boardPanel" class="card panel hidden">
+  <div class="panelhead"><div><div class="sub">🧷 Gesammelte Erkenntnisse</div><h2 style="margin:3px 0">Beweiswand</h2></div><button id="closeBoard" class="btn" type="button">Schließen</button></div>
+  <div id="evidenceBoard" class="board"></div>
+ </section>
+
+ <div class="footer">Road to Independence · Doppelstunden-Version · Live-Sitzung ohne dauerhafte Spielstände</div>
+</section>
+</div>
+
+<script type="module">
+const cfg=window.ROAD_CONFIG||{};
+let supabase=null,liveChannel=null,liveReady=false,clientKey=null,liveTicker=null,liveDirty=true,lastPresenceTrack=0;
+const $=id=>document.getElementById(id);
+const STATION_IDS=["s1","s2","s3","s4","s5","s6","s7","s8","s9","s10"];
+const READ={s1:22,s2:24,s3:24,s4:26,s5:27,s6:25,s7:30,s8:28,s9:30,s10:28};
+const WRITE={s1:55,s2:65,s3:60,s4:65,s5:65,s6:65,s7:75,s8:70,s9:80,s10:80,final:80};
+const POS={
+ s1:[150,240],s2:[355,240],s3:[650,240],s4:[870,240],s5:[210,660],s6:[465,660],s7:[760,660],s8:[1030,660],s9:[1290,350],s10:[1420,470],final:[1360,650],
+ npcMerchant:[270,315],npcPrinter:[760,320],npcDelegate:[390,760],npcMilitia:[900,760],npcCitizen:[1320,560],npcJudge:[1460,590],
+ itemTax:[95,285],itemTea:[745,200],itemPamphlet:[845,355],itemLetter:[520,730],itemMap:[1110,700],itemDeclaration:[840,560]
+};
+const NAMES={s1:"13 Kolonien",s2:"Schulden & Steuern",s3:"Boston Tea Party",s4:"Strafgesetze",s5:"Kontinentalkongress",s6:"Lexington & Concord",s7:"Unabhängigkeit 1776",s8:"Krieg & Frieden",s9:"Verfassung",s10:"Demokratie-Check",final:"Abschlussmission",npcMerchant:"Händler",npcPrinter:"Drucker",npcDelegate:"Delegierter",npcMilitia:"Milizionär",npcCitizen:"Bürgerin",npcJudge:"Richter",itemTax:"Steuerbescheid",itemTea:"Teekiste",itemPamphlet:"Flugblatt",itemLetter:"Delegiertenbrief",itemMap:"Kartenskizze",itemDeclaration:"Unabhängigkeitserklärung"};
+const ITEMS={tax:"Steuerbescheid",tea:"Teekiste",pamphlet:"Flugblatt",letter:"Delegiertenbrief",map:"Kartenskizze",declaration:"Unabhängigkeitserklärung"};
+
+const DATA={
+ s1:{title:"Station 1 – Die 13 Kolonien",text:"An der Atlantikküste Nordamerikas liegen dreizehn britische Kolonien. Sie gehören zum britischen Weltreich, besitzen aber teilweise eigene Versammlungen und regeln manches selbst. In wichtigen Fragen – etwa Außenhandel und Krieg – bestimmt jedoch Großbritannien. Eine Kolonie ist ein Gebiet, das von einem anderen Staat beherrscht wird und politisch nicht vollständig selbstständig ist.",type:"mc",q:"Welche Definition passt am besten zum Begriff Kolonie?",choices:[["Ein vollständig unabhängiger Staat",false],["Ein von einem anderen Staat beherrschtes Gebiet",true],["Nur eine große Hafenstadt",false],["Ein Gebiet ohne politische Regeln",false]],checkpoint:"<h3>Heft 1 – Grundbegriff</h3><p><b>Überschrift:</b> Die 13 Kolonien</p><p><b>Übertrage:</b> Eine Kolonie ist ein Gebiet, das von einem anderen Staat beherrscht wird und politisch nicht vollständig selbstständig ist. Die 13 britischen Kolonien lagen an der Atlantikküste Nordamerikas.</p>",evidence:"Die 13 Kolonien gehören zu Großbritannien, besitzen aber teilweise eigene politische Strukturen."},
+ s2:{title:"Station 2 – Kriegsschulden und neue Steuern",text:"Großbritannien kämpft von 1754 bis 1763 in Nordamerika gegen Frankreich. Der Krieg ist Teil eines größeren europäischen Konflikts. Großbritannien gewinnt, hat danach aber hohe Schulden. Die Regierung verlangt deshalb, dass auch die Kolonien stärker zu den Kosten beitragen. 1765 wird zum Beispiel der Stamp Act beschlossen: Für zahlreiche Druckerzeugnisse werden Abgaben verlangt.",type:"sequence",q:"Ordne Ursache und Folge.",sequence:["Großbritannien führt Krieg","Großbritannien hat hohe Schulden","Neue Abgaben werden eingeführt","Unzufriedenheit in den Kolonien wächst"],checkpoint:"<h3>Heft 2 – Ursache und Folge</h3><table><tr><th>Ursache</th><th>Folge</th></tr><tr><td>Krieg gegen Frankreich</td><td>Hohe britische Schulden</td></tr><tr><td>Hohe Schulden</td><td>Neue Abgaben in den Kolonien</td></tr></table><p>Übertrage die Tabelle.</p>",evidence:"Kriegsschulden führen zu neuen britischen Abgaben in den Kolonien."},
+ s3:{title:"Station 3 – „No taxation without representation“ und Boston Tea Party",text:"Viele Kolonisten lehnen die neuen Abgaben nicht nur wegen des Geldes ab. Sie haben keine gewählten Vertreter im britischen Parlament. Daraus entsteht die Forderung „No taxation without representation“ – keine Besteuerung ohne politische Vertretung. Am 16. Dezember 1773 protestieren Kolonisten im Hafen von Boston gegen die britische Teepolitik und werfen Tee aus drei Schiffen ins Wasser.",type:"multi",q:"Welche zwei Aussagen treffen den Konflikt besonders gut?",choices:[["Die Kolonisten verlangen politische Vertretung.",true],["Die Boston Tea Party ist ein Protest gegen britische Politik.",true],["Die Kolonisten wollen höhere Steuern.",false],["Der Streit betrifft nur das Wetter im Hafen.",false]],checkpoint:"<h3>Heft 3 – Merksatz</h3><p><b>Übertrage:</b> „No taxation without representation“ bedeutet: Die Kolonisten wollten keine Steuern akzeptieren, solange sie im britischen Parlament politisch nicht vertreten waren. Die Boston Tea Party 1773 wurde zum Symbol dieses Protests.</p>",evidence:"Die Steuerfrage wird zu einer Frage politischer Mitbestimmung."},
+ s4:{title:"Station 4 – Großbritannien reagiert mit Strafmaßnahmen",text:"Die britische Regierung betrachtet die Boston Tea Party als offene Provokation. 1774 wird der Hafen von Boston zeitweise geschlossen. Außerdem wird die Selbstverwaltung von Massachusetts eingeschränkt und die Kontrolle durch britische Behörden und Soldaten verstärkt. Viele Kolonisten nennen diese Maßnahmen die „unerträglichen Gesetze“. Statt den Widerstand zu beenden, führen sie dazu, dass die Kolonien enger zusammenrücken.",type:"mc",q:"Welche Folge haben die britischen Strafmaßnahmen?",choices:[["Die Kolonien arbeiten enger zusammen.",true],["Alle Proteste enden sofort.",false],["Massachusetts erhält mehr Selbstverwaltung.",false],["Großbritannien zieht alle Soldaten ab.",false]],checkpoint:"<h3>Heft 4 – Eskalation</h3><p><b>Vervollständige im Heft:</b> Die britischen Strafmaßnahmen beruhigten den Konflikt nicht, weil …</p><p>Schreibe mindestens zwei ganze Sätze und nutze <i>Boston, Selbstverwaltung, Zusammenarbeit</i>.</p>",evidence:"Britische Strafmaßnahmen verstärken die Zusammenarbeit zwischen den Kolonien."},
+ s5:{title:"Station 5 – Erster Kontinentalkongress 1774",text:"Im September 1774 treffen sich Vertreter von zwölf Kolonien in Philadelphia. Georgia nimmt noch nicht teil. Diese Versammlung heißt Erster Kontinentalkongress. Die Delegierten wollen zunächst nicht die Unabhängigkeit erklären. Sie fordern vor allem die Rücknahme der Strafgesetze und die Achtung ihrer Rechte. Zusätzlich wird ein Boykott britischer Waren beschlossen, um politischen Druck auszuüben.",type:"match",q:"Ordne Begriff und Bedeutung.",pairs:[["Kontinentalkongress","Gemeinsame Beratung mehrerer Kolonien"],["Boykott","Waren absichtlich nicht kaufen oder handeln"]],checkpoint:"<h3>Heft 5 – Begriffe</h3><table><tr><th>Begriff</th><th>Bedeutung</th></tr><tr><td>Kontinentalkongress</td><td>Gemeinsame Versammlung von Vertretern mehrerer Kolonien</td></tr><tr><td>Boykott</td><td>Waren absichtlich nicht kaufen oder handeln, um Druck auszuüben</td></tr></table><p>Übertrage die Tabelle.</p>",evidence:"Der Kontinentalkongress organisiert gemeinsamen politischen Widerstand."},
+ s6:{title:"Station 6 – Lexington und Concord 1775",text:"In Massachusetts organisieren sich Kolonisten in Milizen. Das sind bewaffnete Bürger, die sich im Notfall verteidigen sollen. Sie sammeln Waffen und Munition. Die britische Führung will solche Vorräte kontrollieren oder beschlagnahmen. Am 19. April 1775 treffen britische Soldaten bei Lexington und Concord auf Kolonisten. Es kommt zu den ersten Gefechten. Damit beginnt der Amerikanische Unabhängigkeitskrieg.",type:"sequence",q:"Ordne die Eskalation.",sequence:["Kolonisten bilden Milizen","Waffen werden gesammelt","Britische Soldaten greifen ein","Gefechte bei Lexington und Concord","Unabhängigkeitskrieg beginnt"],checkpoint:"<h3>Heft 6 – Vom Streit zum Krieg</h3><p><b>Übertrage:</b> 1774 versuchten viele Kolonisten noch, ihre Rechte innerhalb des britischen Reiches zu sichern. Mit den Gefechten bei Lexington und Concord 1775 wurde aus dem politischen Streit ein Krieg.</p>",evidence:"Lexington und Concord markieren den Übergang vom politischen zum bewaffneten Konflikt."},
+ s7:{title:"Station 7 – Die Unabhängigkeitserklärung 1776",text:"Auch nach Beginn des Krieges ist die vollständige Trennung zunächst nicht beschlossen. Im Zweiten Kontinentalkongress wächst aber die Überzeugung, dass eine Einigung mit Großbritannien kaum noch möglich ist. Am 4. Juli 1776 wird die Unabhängigkeitserklärung verabschiedet. Sie nennt grundlegende Rechte wie Leben und Freiheit und erklärt, dass Regierungen ihre rechtmäßige Macht aus der Zustimmung der Regierten erhalten sollen.",type:"multi",q:"Welche zwei Grundideen gehören zur Unabhängigkeitserklärung?",choices:[["Menschen besitzen grundlegende Rechte.",true],["Regierungsmacht soll auf Zustimmung der Regierten beruhen.",true],["Ein König soll unbegrenzt herrschen.",false],["Politische Rechte sind grundsätzlich unnötig.",false]],checkpoint:"<h3>Heft 7 – 1776</h3><p><b>Überschrift:</b> Unabhängigkeitserklärung</p><p>Übertrage drei Kernideen:</p><ol><li>Menschen besitzen grundlegende Rechte.</li><li>Dazu gehören Leben und Freiheit.</li><li>Politische Macht soll auf der Zustimmung der Regierten beruhen.</li></ol>",evidence:"1776 wird Unabhängigkeit mit Rechten und Zustimmung der Regierten begründet."},
+ s8:{title:"Station 8 – Krieg, französische Hilfe und Frieden",text:"Die Erklärung von 1776 beendet den Krieg nicht. 1777 gewinnen die Amerikaner bei Saratoga einen wichtigen Erfolg. Frankreich unterstützt die Vereinigten Staaten ab 1778 offen militärisch und finanziell. 1781 ergibt sich bei Yorktown eine große britische Armee. Im Frieden von Paris 1783 erkennt Großbritannien die Unabhängigkeit der Vereinigten Staaten an.",type:"sequence",q:"Ordne die Ereignisse.",sequence:["Saratoga 1777","Frankreich unterstützt die USA 1778","Yorktown 1781","Frieden von Paris 1783"],checkpoint:"<h3>Heft 8 – Zeitstrahl</h3><p>Übertrage als kleinen Zeitstrahl:</p><p><b>1777 Saratoga → 1778 französische Unterstützung → 1781 Yorktown → 1783 Frieden und Anerkennung der Unabhängigkeit</b></p>",evidence:"Französische Unterstützung hilft den USA im Krieg; 1783 wird die Unabhängigkeit anerkannt."},
+ s9:{title:"Station 9 – Verfassung und Gewaltenteilung",text:"Nach dem Krieg braucht der neue Staat feste politische Regeln. 1787 wird die Verfassung der Vereinigten Staaten beschlossen. Die Staatsgewalt wird auf verschiedene Bereiche verteilt: Der Kongress beschließt Gesetze, der Präsident führt sie aus, und Gerichte sprechen Recht und kontrollieren die Anwendung der Verfassung. Diese Gewaltenteilung soll verhindern, dass eine einzelne Person oder Institution zu viel Macht erhält.",type:"match",q:"Ordne Institution und Aufgabe.",pairs:[["Kongress","beschließt Gesetze"],["Präsident","führt Gesetze aus"],["Gerichte","sprechen Recht und kontrollieren"]],checkpoint:"<h3>Heft 9 – Gewaltenteilung</h3><table><tr><th>Bereich</th><th>Institution / Aufgabe</th></tr><tr><td>Gesetzgebung</td><td>Kongress – beschließt Gesetze</td></tr><tr><td>Ausführung</td><td>Präsident – führt Gesetze aus</td></tr><tr><td>Rechtsprechung</td><td>Gerichte – sprechen Recht und kontrollieren</td></tr></table><p>Übertrage die Tabelle und ergänze: <b>Gewaltenteilung soll Macht begrenzen.</b></p>",evidence:"Die Verfassung verteilt politische Macht auf mehrere Institutionen."},
+ s10:{title:"Station 10 – Waren die USA schon eine vollständige Demokratie?",text:"Die neue Ordnung besitzt wichtige demokratische Merkmale: eine Verfassung, Gewaltenteilung, gewählte Vertreter und Grundrechte. Gleichzeitig sind viele Menschen von politischer Teilhabe ausgeschlossen. Frauen dürfen nicht wählen, versklavte Menschen besitzen keine gleichen Rechte, und das Wahlrecht ist vielerorts zusätzlich an Eigentum oder andere Voraussetzungen gebunden. Deshalb unterscheidet sich die damalige Demokratie deutlich von heutigen Vorstellungen.",type:"multi",q:"Welche zwei Aussagen ergeben ein ausgewogenes Urteil?",choices:[["Die USA besitzen bereits wichtige demokratische Strukturen.",true],["Viele Menschen bleiben von gleichen politischen Rechten ausgeschlossen.",true],["Alle Erwachsenen besitzen sofort gleiche politische Rechte.",false],["Es gibt keinerlei gewählte politische Vertreter.",false]],checkpoint:"<h3>Heft 10 – Urteil</h3><p>Schreibe 4–5 Sätze zur Aussage:</p><p><b>„Die USA waren nach ihrer Gründung bereits eine vollständige Demokratie.“</b></p><p>Nenne mindestens zwei Argumente dafür oder dagegen und formuliere ein eigenes Urteil.</p>",evidence:"Die USA besitzen demokratische Strukturen, schließen aber viele Menschen von gleichen politischen Rechten aus."}
+};
+
+const NPC={
+ npcMerchant:{title:"Händler",intro:"„Ein Boykott trifft Großbritannien, aber auch unser eigenes Geschäft.“",options:[
+  ["Warum boykottieren?",()=>{addEvidence("npcBoycott","Boykotte sollen wirtschaftlichen Druck erzeugen, obwohl sie auch Kolonisten belasten.");return "„Weil gemeinsames Nichtkaufen politischen Druck erzeugen kann.“"}],
+  ["Was ist besonders wichtig?",()=>{addInventory("tax");return "„Nicht nur die Höhe der Abgaben – viele ärgern sich über fehlende Mitsprache.“ Du erhältst einen Steuerbescheid."}]
+ ]},
+ npcPrinter:{title:"Drucker",intro:"„Flugblätter und Zeitungen tragen Nachrichten von Stadt zu Stadt.“",options:[
+  ["Flugblatt ansehen",()=>{addInventory("pamphlet");addEvidence("npcPrint","Druckschriften helfen, Protest und Forderungen über große Entfernungen zu verbreiten.");return "Ein Flugblatt wandert in dein Inventar."}],
+  ["Warum ist das wichtig?",()=>{return "„Weil Menschen nur gemeinsam handeln können, wenn sie von denselben Ereignissen erfahren.“"}]
+ ]},
+ npcDelegate:{title:"Delegierter",intro:"„1774 wollen viele von uns noch keine Unabhängigkeit. Wir wollen zuerst unsere Rechte sichern.“",options:[
+  ["Brief erbitten",()=>{addInventory("letter");addEvidence("npcCompromise","1774 hoffen viele Delegierte noch auf eine politische Lösung innerhalb des britischen Reiches.");return "Du erhältst einen Delegiertenbrief."}],
+  ["Warum gemeinsam beraten?",()=>{return "„Weil eine einzelne Kolonie weniger Druck ausüben kann als mehrere zusammen.“"}]
+ ]},
+ npcMilitia:{title:"Milizionär",intro:"„Wir sammeln Waffen, weil wir mit einem britischen Eingreifen rechnen.“",options:[
+  ["Was ist eine Miliz?",()=>{addEvidence("npcMilitia","Milizen bestehen aus bewaffneten Bürgern und zeigen die militärische Zuspitzung.");return "„Bewaffnete Bürger, die sich im Notfall verteidigen.“"}],
+  ["Ist der Krieg schon vorbei?",()=>{return "„Nein. 1775 beginnt er erst.“"}]
+ ]},
+ npcCitizen:{title:"Bürgerin",intro:"„In der Erklärung ist von Gleichheit und Rechten die Rede – aber ich darf nicht wählen.“",options:[
+  ["Was zeigt dieser Widerspruch?",()=>{addEvidence("npcLimits","Revolutionäre Rechte und tatsächliche politische Teilhabe stimmen noch nicht für alle Menschen überein.");return "Die politischen Ideen sind weitreichender als die damalige Wirklichkeit."}],
+  ["Gilt Gleichheit für alle?",()=>{return "In der politischen Praxis des späten 18. Jahrhunderts werden viele Menschen ausgeschlossen."}]
+ ]},
+ npcJudge:{title:"Richter",intro:"„Eine Verfassung legt Regeln fest, an die staatliche Institutionen gebunden sind.“",options:[
+  ["Warum Gewaltenteilung?",()=>{addEvidence("npcPowers","Gewaltenteilung soll verhindern, dass politische Macht bei einer einzigen Stelle konzentriert wird.");return "Macht wird auf verschiedene Institutionen verteilt."}],
+  ["Vergleich mit Absolutismus",()=>{return "Im Absolutismus bündelt der Herrscher sehr viel Macht. Gewaltenteilung verfolgt das entgegengesetzte Prinzip."}]
+ ]}
+};
+
+const ITEM_MAP={
+ itemTax:["tax","Steuerbescheid","Der Steuerbescheid erinnert an die neuen Abgaben."],
+ itemTea:["tea","Teekiste","Die Teekiste verweist auf den Protest in Boston."],
+ itemPamphlet:["pamphlet","Flugblatt","Das Flugblatt zeigt, wie politische Nachrichten verbreitet werden."],
+ itemLetter:["letter","Delegiertenbrief","Der Brief zeigt, dass 1774 noch nicht alle Unabhängigkeit fordern."],
+ itemMap:["map","Kartenskizze","Die Kartenskizze deckt zusätzliche Bereiche der Übersichtskarte auf."],
+ itemDeclaration:["declaration","Unabhängigkeitserklärung","Das Dokument enthält politische Grundideen von 1776."]
+};
+
+let state={name:"",clazz:"",x:260,y:430,done:{},visited:{},inventory:{},evidence:{},talked:{},badges:{},quests:{},current:null,seconds:0,finalDone:false};
+let near=null,activeInterval=null,activeTimer=null,sessionStart=Date.now(),clockInt=null,selectedInv=[];
+
+function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function stationDoneCount(){return STATION_IDS.filter(id=>state.done[id]).length}
+function evidenceCount(){return Object.keys(state.evidence).filter(k=>state.evidence[k]).length}
+function progress(){return Math.min(100,Math.round(stationDoneCount()*8+Math.min(10,evidenceCount())*1.2+(state.finalDone?8:0)))}
+function stationUnlocked(id){if(id==="s1")return true;if(id==="final")return stationDoneCount()===10;const n=Number(id.slice(1));return !!state.done["s"+(n-1)]}
+function addEvidence(k,v){state.evidence[k]=v}
+function addInventory(k){state.inventory[k]=true}
+function badge(k,v){state.badges[k]=v}
+
+function sessionSlug(v){
+ return String(v||"").trim().toLowerCase().replace(/[^a-z0-9_-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);
+}
+async function initLiveClient(){
+ const key=cfg.SUPABASE_PUBLISHABLE_KEY||cfg.SUPABASE_ANON_KEY||"";
+ if(!cfg.SUPABASE_URL||!key||cfg.SUPABASE_URL.includes("YOUR_")){
+  $("syncLoginText").textContent="Offline-Test: Lehreransicht empfängt keine Live-Daten";
+  return false;
+ }
+ try{
+  const mod=await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+  supabase=mod.createClient(cfg.SUPABASE_URL,key,{
+   auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+   realtime:{
+    worker:true,
+    heartbeatIntervalMs:15000,
+    heartbeatCallback:(status)=>{
+     if((status==="timeout"||status==="disconnected")&&supabase){
+      try{supabase.realtime.connect()}catch(e){console.warn("Realtime reconnect:",e)}
+     }
+    }
+   }
+  });
+  liveReady=true;
+  $("syncDotLogin").classList.add("online");
+  $("syncLoginText").textContent="Live-Fortschritt verfügbar";
+  return true;
+ }catch(e){
+  console.warn("Live-Verbindung nicht verfügbar:",e);
+  $("syncLoginText").textContent="Offline-Test: Live-Verbindung fehlgeschlagen";
+  return false;
+ }
+}
+function livePayload(){
+ state.seconds=Math.floor((Date.now()-sessionStart)/1000);
+ return {
+  student_name:state.name,
+  session_code:state.clazz,
+  progress_percent:progress(),
+  current_stage:stationDoneCount(),
+  current_task:state.finalDone?"Abgeschlossen":(stationUnlocked("final")?"Abschlussmission":NAMES["s"+Math.min(10,stationDoneCount()+1)]),
+  play_seconds:state.seconds,
+  online_at:new Date().toISOString()
+ };
+}
+async function joinLive(){
+ if(!liveReady||!supabase)return false;
+ const slug=sessionSlug(state.clazz);
+ if(!slug)return false;
+ if(liveChannel){
+  try{await liveChannel.untrack()}catch(e){}
+  try{await supabase.removeChannel(liveChannel)}catch(e){}
+ }
+ clientKey=(globalThis.crypto&&crypto.randomUUID)?crypto.randomUUID():"client-"+Math.random().toString(36).slice(2);
+ liveChannel=supabase.channel("rti-live-"+slug,{config:{presence:{key:clientKey}}});
+ return await new Promise(resolve=>{
+  let settled=false;
+  liveChannel.subscribe(async(status,err)=>{
+   if(status==="SUBSCRIBED"){
+    try{
+     await liveChannel.track(livePayload());
+     lastPresenceTrack=Date.now();
+     liveDirty=false;
+     $("syncDot").className="syncdot online";
+     $("syncState").lastChild.textContent=" live";
+     if(!settled){settled=true;resolve(true)}
+    }catch(e){
+     console.warn(e);
+     if(!settled){settled=true;resolve(false)}
+    }
+   }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){
+    console.warn("Realtime:",status,err);
+    $("syncDot").className="syncdot";
+    $("syncState").lastChild.textContent=" offline";
+    if(!settled){settled=true;resolve(false)}
+   }
+  });
+  setTimeout(()=>{if(!settled){settled=true;resolve(false)}},7000);
+ });
+}
+async function pushLive(force=false){
+ if(!liveChannel)return;
+ const now=Date.now();
+ // Presence is deliberately slow-changing. Never exceed the Supabase per-client limit.
+ if(!force && (!liveDirty || now-lastPresenceTrack<12000))return;
+ try{
+  await liveChannel.track(livePayload());
+  lastPresenceTrack=Date.now();
+  liveDirty=false;
+  $("syncDot").className="syncdot online";
+  $("syncState").lastChild.textContent=" live";
+ }catch(e){
+  console.warn("Presence update:",e);
+  $("syncDot").className="syncdot";
+  $("syncState").lastChild.textContent=" verbindet neu …";
+  try{supabase.realtime.connect()}catch(_){}
+ }
+}
+function save(){
+ state.seconds=Math.floor((Date.now()-sessionStart)/1000);
+ // Mark state as changed; the 15-second live ticker sends one coalesced Presence update.
+ liveDirty=true;
+}
+
+function update(){
+ $("player").style.left=state.x+"px";$("player").style.top=state.y+"px";
+ STATION_IDS.forEach(id=>{const el=$(id);el.classList.toggle("done",!!state.done[id]);el.classList.toggle("locked",!stationUnlocked(id)&&!state.done[id])});
+ const fin=$("final"),fl=$("finalLabel");const open=stationUnlocked("final");fin.classList.toggle("hidden",!open&&!state.finalDone);fl.classList.toggle("hidden",!open&&!state.finalDone);fin.classList.toggle("done",state.finalDone);fin.classList.toggle("locked",!open);
+ Object.keys(ITEM_MAP).forEach(id=>$(id).classList.toggle("collected",!!state.visited[id]));
+ $("soldiersA").classList.toggle("hidden",!state.done.s4);$("barricadeA").classList.toggle("hidden",!state.done.s6);$("flagA").classList.toggle("hidden",!state.done.s7);
+ $("progressText").textContent=progress()+"%";$("progressBar").style.width=progress()+"%";$("evidenceCount").textContent=evidenceCount();
+ $("missionText").textContent=state.finalDone?"Mission abgeschlossen – Bonusinhalte können weiter erkundet werden.":open?"Die Abschlussmission wurde freigeschaltet.":("Nächste Pflichtstation: "+(stationDoneCount()+1)+" – "+NAMES["s"+(stationDoneCount()+1)]);
+ renderSide();updateMap();updateCamera();detectNear();save();
+}
+function updateCamera(){
+ const vp=$("viewport"),world=$("world");const vw=vp.clientWidth,vh=vp.clientHeight;
+ const wx=1600,wh=900;let tx=vw/2-state.x,ty=vh/2-state.y;
+ tx=Math.min(0,Math.max(vw-wx,tx));ty=Math.min(0,Math.max(vh-wh,ty));world.style.transform=`translate(${tx}px,${ty}px)`;
+ $("miniPlayer").style.left=(state.x/1600*100)+"%";$("miniPlayer").style.top=(state.y/900*100)+"%";
+}
+function renderSide(){
+ const itemCount=Object.keys(state.inventory).filter(k=>state.inventory[k]).length,talkCount=Object.keys(state.talked).filter(k=>state.talked[k]).length,comb=!!state.quests.combine,explore=evidenceCount()>=12;
+ state.quests.items=itemCount>=5;state.quests.talk=talkCount>=4;state.quests.explore=explore;
+ if(state.quests.items)badge("collector","Sammler");if(state.quests.talk)badge("speaker","Gesprächsführer");if(comb)badge("detective","Spürnase");if(explore)badge("researcher","Forscher");
+ $("quests").innerHTML=[["Finde 5 Fundstücke",state.quests.items],["Sprich mit 4 Personen",state.quests.talk],["Kombiniere passende Gegenstände",comb],["Sammle 12 Beweise",explore]].map(([t,d])=>`<div class="quest ${d?"done":""}">${d?"✓":"○"} ${t}</div>`).join("");
+ const badges=Object.values(state.badges);$("badges").innerHTML=badges.length?badges.map(x=>`<span class="badge">${x}</span>`).join(""):`<span class="sub">Noch keine.</span>`;
+ $("stationList").innerHTML=STATION_IDS.map((id,i)=>`<li>${state.done[id]?"✓":stationUnlocked(id)?"○":"🔒"} ${i+1}. ${NAMES[id]}</li>`).join("");
+}
+function updateMap(){
+ const reveal=[state.done.s1||state.visited.itemTax,state.done.s3||state.talked.npcPrinter,state.done.s5||state.talked.npcDelegate,state.done.s7||state.talked.npcMilitia,state.done.s9||state.visited.itemMap];
+ reveal.forEach((v,i)=>{["miniFog","mapFog"].forEach(pre=>$(pre+(i+1)).classList.toggle("hidden",!!v))});
+ document.querySelectorAll("[data-mini]").forEach(d=>d.classList.toggle("done",!!state.done[d.dataset.mini]));
+ document.querySelectorAll("[data-map]").forEach(d=>d.classList.toggle("done",!!state.done[d.dataset.map]));
+}
+function detectNear(){
+ let best=null,dist=999;
+ document.querySelectorAll("[data-entity]").forEach(el=>{
+  const id=el.dataset.entity;if((id.startsWith("s")||id==="final")&&!stationUnlocked(id)&&!state.done[id]&&!state.finalDone)return;
+  if(ITEM_MAP[id]&&state.visited[id])return;const p=POS[id];if(!p)return;const d=Math.hypot(state.x-p[0],state.y-p[1]);if(d<dist){dist=d;best=id}
+ });
+ near=dist<82?best:null;$("prompt").classList.toggle("hidden",!near);if(near)$("prompt").textContent=`E / Leertaste: ${NAMES[near]} öffnen`;
+}
+function move(dx,dy){
+ if(!$("interactionPanel").classList.contains("hidden")||!$("mapOverlay").classList.contains("hidden"))return;
+ state.x=Math.max(20,Math.min(1560,state.x+dx));state.y=Math.max(30,Math.min(860,state.y+dy));update();
+}
+function interact(id){if(!id)return;if(id.startsWith("s")||id==="final")openStation(id);else if(id.startsWith("npc"))openNpc(id);else if(ITEM_MAP[id])collectItem(id)}
+function collectItem(id){
+ const [key,label,msg]=ITEM_MAP[id];state.visited[id]=true;addInventory(key);
+ if(key==="map")badge("cartographer","Kartograf");
+ simplePanel("Fundstück",label,`<div class="paper"><p>${msg}</p><p>Der Gegenstand wurde ins Inventar gelegt.</p></div>`);update();
+}
+function openNpc(id){
+ const d=NPC[id];state.talked[id]=true;
+ $("interactionKind").textContent="NPC-Dialog";$("interactionTitle").textContent=d.title;
+ $("interactionContent").innerHTML=`<div class="paper"><p>${d.intro}</p></div><div id="dialogOptions" class="dialogOptions"></div><div id="dialogFeedback" class="feedback hidden"></div>`;
+ d.options.forEach(([lab,fn])=>{const b=document.createElement("button");b.type="button";b.className="btn";b.textContent=lab;b.onclick=()=>{$("dialogFeedback").textContent=fn();$("dialogFeedback").classList.remove("hidden");update()};$("dialogOptions").appendChild(b)});
+ $("interactionPanel").classList.remove("hidden");$("interactionPanel").scrollIntoView({behavior:"smooth"});update();
+}
+function simplePanel(kind,title,html){$("interactionKind").textContent=kind;$("interactionTitle").textContent=title;$("interactionContent").innerHTML=html;$("interactionPanel").classList.remove("hidden");$("interactionPanel").scrollIntoView({behavior:"smooth"})}
+function formatCountdown(s){return fmt(Math.max(0,s))}
+function startTimer(kind,id,total,done){
+ clearInterval(activeInterval);let left=total;activeTimer={kind,id,total,left};
+ const textId=kind==="read"?"readTimerText":"writeTimerText",fillId=kind==="read"?"readTimerFill":"writeTimerFill",hintId=kind==="read"?"readHint":"writeHint";
+ $(textId).textContent=formatCountdown(left);$(fillId).style.width="0%";
+ activeInterval=setInterval(()=>{if(document.hidden)return;left--;activeTimer.left=left;$(textId).textContent=formatCountdown(left);$(fillId).style.width=((total-left)/total*100)+"%";if(left<=0){clearInterval(activeInterval);activeTimer=null;$(hintId).textContent=kind==="read"?"Lesezeit abgeschlossen. Sicherung freigeschaltet.":"Bearbeitungszeit abgeschlossen. Jetzt kann bestätigt werden.";done()}},1000);
+}
+function openStation(id){
+ if(id==="final")return openFinal();if(!stationUnlocked(id)&&!state.done[id])return;state.current=id;const d=DATA[id];
+ $("interactionKind").textContent="Pflichtstation";$("interactionTitle").textContent=d.title;
+ $("interactionContent").innerHTML=`<div class="paper"><p>${d.text}</p></div><div class="timerrow"><div id="readTimerText" class="timer"></div><div class="timerbar"><div id="readTimerFill" class="timerfill"></div></div></div><p id="readHint" class="sub">Lies den Text in Ruhe. Der Timer pausiert beim Verlassen des Tabs.</p><div id="taskArea" class="hidden"></div><div id="checkpointArea" class="hidden"></div>`;
+ $("interactionPanel").classList.remove("hidden");$("interactionPanel").scrollIntoView({behavior:"smooth"});
+ if(state.done[id]){$("readTimerText").textContent="ERLEDIGT";$("readTimerFill").style.width="100%";$("readHint").textContent="Station bereits abgeschlossen.";buildTask(id,true)}else startTimer("read",id,READ[id],()=>buildTask(id,false));
+}
+function buildTask(id,review){
+ const d=DATA[id],a=$("taskArea");a.classList.remove("hidden");a.innerHTML=`<h3>Digitale Sicherung</h3><p>${d.q}</p><div id="taskBody"></div><div id="taskFeedback" class="feedback hidden"></div>`;
+ if(d.type==="mc")buildMC(id,d.choices,review);if(d.type==="multi")buildMulti(id,d.choices,review);if(d.type==="sequence")buildSequence(id,d.sequence,review);if(d.type==="match")buildMatch(id,d.pairs,review);
+}
+function taskSuccess(id,review){
+ $("taskFeedback").textContent=review?"Richtig – diese Station ist bereits abgeschlossen.":"Richtig. Nun folgt die verbindliche Heftsicherung.";$("taskFeedback").classList.remove("hidden");if(review)return;
+ addEvidence(id,DATA[id].evidence);buildCheckpoint(id);update();
+}
+function buildMC(id,ch,review){
+ const w=document.createElement("div");w.className="choices";ch.forEach(([lab,ok])=>{const b=document.createElement("button");b.type="button";b.className="btn choice";b.textContent=lab;b.onclick=()=>{[...w.children].forEach(x=>x.classList.remove("good","bad"));b.classList.add(ok?"good":"bad");if(ok)taskSuccess(id,review);else{$("taskFeedback").textContent="Noch nicht. Lies den Abschnitt noch einmal.";$("taskFeedback").classList.remove("hidden")}};w.appendChild(b)});$("taskBody").appendChild(w)
+}
+function buildMulti(id,ch,review){
+ const w=document.createElement("div");w.className="choices";let sel=new Set();ch.forEach(([lab,ok],i)=>{const b=document.createElement("button");b.type="button";b.className="btn choice";b.textContent=lab;b.onclick=()=>{sel.has(i)?sel.delete(i):sel.add(i);b.style.outline=sel.has(i)?"2px solid var(--gold)":""};w.appendChild(b)});
+ const check=document.createElement("button");check.className="btn primary";check.style.marginTop="9px";check.textContent="Auswahl prüfen";check.onclick=()=>{const cor=ch.map((x,i)=>x[1]?i:null).filter(x=>x!==null);const ok=cor.length===sel.size&&cor.every(x=>sel.has(x));if(ok)taskSuccess(id,review);else{$("taskFeedback").textContent="Die Auswahl stimmt noch nicht vollständig.";$("taskFeedback").classList.remove("hidden")}};$("taskBody").append(w,check)
+}
+function buildSequence(id,seq,review){
+ let pool=[...seq].sort(()=>Math.random()-.5),pick=[];const body=$("taskBody");
+ const render=()=>{body.innerHTML=`<div class="sub">Klicke die Ereignisse in der richtigen Reihenfolge an.</div><div id="seqPool" class="choices"></div><div class="finalOrder"><b>Reihenfolge:</b> ${pick.join(" → ")||"noch leer"}</div>`;
+ pool.forEach(x=>{const b=document.createElement("button");b.className="btn choice";b.type="button";b.textContent=x;b.onclick=()=>{pick.push(x);pool=pool.filter(y=>y!==x);render();if(!pool.length){if(pick.every((v,i)=>v===seq[i]))taskSuccess(id,review);else{pick=[];pool=[...seq].sort(()=>Math.random()-.5);$("taskFeedback").textContent="Noch nicht richtig – neuer Versuch.";$("taskFeedback").classList.remove("hidden");render()}}};$("seqPool").appendChild(b)})};render()
+}
+function buildMatch(id,pairs,review){
+ const body=$("taskBody");body.innerHTML=`<div class="sub">Wähle zuerst links einen Begriff, dann die passende Bedeutung.</div><div id="matchWrap" class="choices"></div>`;let sel=null,matched=0;
+ pairs.forEach(p=>{const b=document.createElement("button");b.className="btn choice";b.type="button";b.textContent=p[0];b.onclick=()=>{sel=p[0];document.querySelectorAll("#matchWrap .left").forEach(x=>x.style.outline="");b.style.outline="2px solid var(--gold)"};b.classList.add("left");$("matchWrap").appendChild(b)});
+ [...pairs.map(x=>x[1])].sort(()=>Math.random()-.5).forEach(v=>{const b=document.createElement("button");b.className="btn choice";b.type="button";b.textContent=v;b.onclick=()=>{if(!sel)return;const p=pairs.find(x=>x[0]===sel);if(p&&p[1]===v){b.disabled=true;matched++;if(matched===pairs.length)taskSuccess(id,review)}else{$("taskFeedback").textContent="Diese Zuordnung passt nicht.";$("taskFeedback").classList.remove("hidden")}};$("matchWrap").appendChild(b)})
+}
+function buildCheckpoint(id){
+ const a=$("checkpointArea");a.classList.remove("hidden");a.innerHTML=`<div class="paper" style="margin-top:12px">${DATA[id].checkpoint}</div><div class="timerrow"><div id="writeTimerText" class="timer"></div><div class="timerbar"><div id="writeTimerFill" class="timerfill"></div></div></div><p id="writeHint" class="sub">Bearbeite die Sicherung im Heft. Die Bestätigung bleibt bis zum Ablauf gesperrt.</p><button id="finishCheckpoint" class="btn green" disabled>Im Heft erledigt ✓</button>`;
+ startTimer("write",id,WRITE[id],()=>{$("finishCheckpoint").disabled=false});
+ $("finishCheckpoint").onclick=()=>{if($("finishCheckpoint").disabled)return;state.done[id]=true;badge("chronist"+id,"Chronist "+id.slice(1));$("interactionPanel").classList.add("hidden");update()};
+}
+function renderInventory(){
+ selectedInv=[];$("inventoryGrid").innerHTML="";Object.entries(ITEMS).forEach(([id,label])=>{if(!state.inventory[id])return;const b=document.createElement("button");b.className="invItem";b.type="button";b.textContent=label;b.onclick=()=>{if(selectedInv.includes(id)){selectedInv=selectedInv.filter(x=>x!==id);b.classList.remove("selected")}else if(selectedInv.length<2){selectedInv.push(id);b.classList.add("selected")}};$("inventoryGrid").appendChild(b)});
+ if(!$("inventoryGrid").children.length)$("inventoryGrid").innerHTML=`<span class="sub">Noch keine Fundstücke.</span>`;
+}
+function combine(){
+ const s=[...selectedInv].sort().join("+");let msg="Diese Kombination ergibt keine neue Erkenntnis.";
+ const combos={
+  [ ["pamphlet","tax"].sort().join("+") ]:["comboTax","Neue Abgaben + politische Flugblätter: Wirtschaftliche Kritik wird öffentlich und politisch organisiert."],
+  [ ["letter","map"].sort().join("+") ]:["comboUnity","Brief + Karte: Politische Zusammenarbeit verbindet weit voneinander entfernte Kolonien."],
+  [ ["declaration","letter"].sort().join("+") ]:["comboChange","Delegiertenbrief + Unabhängigkeitserklärung: Zwischen 1774 und 1776 verändert sich das politische Ziel von Rechte sichern zu Unabhängigkeit."]
+ };
+ if(combos[s]){const [k,v]=combos[s];addEvidence(k,v);state.quests.combine=true;badge("detective","Spürnase");msg="Neue Erkenntnis freigeschaltet: "+v}
+ $("combineFeedback").textContent=msg;$("combineFeedback").classList.remove("hidden");update();
+}
+function renderBoard(){const vals=Object.values(state.evidence);$("evidenceBoard").innerHTML=vals.length?vals.map(x=>`<div class="evidence">${x}</div>`).join(""):`<span class="sub">Noch keine Beweise.</span>`}
+function openFinal(){
+ state.current="final";$("interactionKind").textContent="Abschlussmission";$("interactionTitle").textContent="Vom Kolonialkonflikt zur neuen Staatsordnung";
+ const events=["Neue Abgaben und fehlende Vertretung","Proteste und Boston Tea Party","Strafmaßnahmen und gemeinsamer Widerstand","Gefechte und Unabhängigkeitskrieg","Unabhängigkeitserklärung 1776","Frieden 1783","Verfassung und Gewaltenteilung"];
+ $("interactionContent").innerHTML=`<div class="paper"><p>Rekonstruiere die Entwicklung in der richtigen Reihenfolge. Danach folgt die letzte Heftsicherung.</p></div><div id="finalTask" style="margin-top:10px"></div>`;$("interactionPanel").classList.remove("hidden");$("interactionPanel").scrollIntoView({behavior:"smooth"});
+ let pool=[...events].sort(()=>Math.random()-.5),pick=[];
+ const render=()=>{$("finalTask").innerHTML=`<div id="finalPool" class="choices"></div><div class="finalOrder"><b>Deine Reihenfolge:</b> ${pick.join(" → ")||"noch leer"}</div>`;
+  pool.forEach(x=>{const b=document.createElement("button");b.className="btn choice";b.type="button";b.textContent=x;b.onclick=()=>{pick.push(x);pool=pool.filter(y=>y!==x);render();if(!pool.length){if(pick.every((v,i)=>v===events[i]))finalCheckpoint();else{pick=[];pool=[...events].sort(()=>Math.random()-.5);render();alert("Noch nicht richtig – neuer Versuch.")}}};$("finalPool").appendChild(b)})};render()
+}
+function finalCheckpoint(){
+ $("finalTask").innerHTML=`<div class="paper"><h3>Letzte Heftsicherung</h3><p><b>Überschrift:</b> Vom Kolonialkonflikt zum neuen Staat</p><p>Übertrage die folgende Kette:</p><p><b>Steuern / fehlende Vertretung → Protest → Strafmaßnahmen → gemeinsamer Widerstand → Krieg → Unabhängigkeit 1776 → Anerkennung 1783 → Verfassung 1787</b></p><p>Schreibe darunter einen eigenen Satz: <b>Welche Veränderung war für die politische Ordnung am wichtigsten?</b></p></div><div class="timerrow"><div id="writeTimerText" class="timer"></div><div class="timerbar"><div id="writeTimerFill" class="timerfill"></div></div></div><p id="writeHint" class="sub">Bearbeitungszeit läuft.</p><button id="finishFinal" class="btn green" disabled>Abschluss im Heft erledigt ✓</button>`;
+ startTimer("write","final",WRITE.final,()=>{$("finishFinal").disabled=false});
+ $("finishFinal").onclick=()=>{if($("finishFinal").disabled)return;state.finalDone=true;badge("final","Mission abgeschlossen");$("interactionPanel").classList.add("hidden");update()};
+}
+function clock(){const s=Math.floor((Date.now()-sessionStart)/1000);state.seconds=s;$("playTime").textContent=fmt(s)}
+function clearPanel(){clearInterval(activeInterval);activeTimer=null;$("interactionPanel").classList.add("hidden");$("viewport").focus()}
+
+$("loginForm").onsubmit=async e=>{
+ e.preventDefault();
+ const n=$("name").value.trim(),c=$("clazz").value.trim();
+ if(!n||!c)return;
+ state.name=n;state.clazz=c;state.seconds=0;sessionStart=Date.now();
+ $("who").textContent=n+" · Sitzung "+c;
+ $("login").classList.add("hidden");$("game").classList.remove("hidden");
+ update();clockInt=setInterval(clock,1000);$("viewport").focus();
+ if(liveReady){
+  const joined=await joinLive();
+  if(joined){
+   clearInterval(liveTicker);
+   liveTicker=setInterval(()=>{liveDirty=true;pushLive(false)},15000);
+  }
+ }
+};
+document.addEventListener("keydown",e=>{if(["INPUT","TEXTAREA"].includes(document.activeElement.tagName))return;const k=e.key.toLowerCase();if(["arrowup","arrowdown","arrowleft","arrowright","w","a","s","d","e"," ","enter"].includes(k))e.preventDefault();if(k==="arrowup"||k==="w")move(0,-18);if(k==="arrowdown"||k==="s")move(0,18);if(k==="arrowleft"||k==="a")move(-18,0);if(k==="arrowright"||k==="d")move(18,0);if(k==="e"||k===" "||k==="enter")interact(near)});
+document.querySelectorAll(".move").forEach(b=>b.onclick=()=>{const d=b.dataset.dir;if(d==="up")move(0,-24);if(d==="down")move(0,24);if(d==="left")move(-24,0);if(d==="right")move(24,0)});
+$("interactBtn").onclick=()=>interact(near);$("closeInteraction").onclick=clearPanel;
+$("mapBtn").onclick=()=>{$("mapOverlay").classList.remove("hidden");updateMap()};$("closeMap").onclick=()=>{$("mapOverlay").classList.add("hidden");$("viewport").focus()};
+$("inventoryBtn").onclick=()=>{renderInventory();$("inventoryPanel").classList.remove("hidden")};$("closeInventory").onclick=()=>$("inventoryPanel").classList.add("hidden");$("combineBtn").onclick=combine;
+$("boardBtn").onclick=()=>{renderBoard();$("boardPanel").classList.remove("hidden")};$("closeBoard").onclick=()=>$("boardPanel").classList.add("hidden");
+$("resetBtn").onclick=()=>{if(!confirm("Aktuelle Sitzung wirklich neu starten? Der Fortschritt geht verloren."))return;location.reload()};
+window.addEventListener("resize",updateCamera);
+window.addEventListener("pagehide",()=>{
+ clearInterval(liveTicker);
+ try{if(liveChannel)liveChannel.untrack()}catch(e){}
+});
+await initLiveClient();
+</script>
+</body>
+</html>
